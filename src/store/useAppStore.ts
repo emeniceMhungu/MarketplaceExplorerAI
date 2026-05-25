@@ -1,11 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export type SortOption = "none" | "priceAsc" | "priceDesc" | "highestRated";
 
 export type AuthState = {
   isAuthenticated: boolean;
+  userEmail: string | null;
   sessionId: string | null;
-  isBootstrapping: boolean;
+  isLoading: boolean;
+  hydrationStatus: "pending" | "ready";
 };
 
 export type FilterState = {
@@ -23,13 +28,17 @@ export type CartState = {
   items: Record<string, CartItem>;
 };
 
+export type PersistedAppState = {
+  auth: AuthState;
+  filter: FilterState;
+  cart: CartState;
+};
+
 export type AppStore = {
   auth: AuthState;
   filter: FilterState;
   cart: CartState;
-  bootstrapSession: () => void;
-  finishBootstrap: () => void;
-  loginStub: (sessionId?: string) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   setSearchQuery: (searchQuery: string) => void;
   setCategory: (category: string | null) => void;
@@ -42,8 +51,10 @@ export type AppStore = {
 
 const INITIAL_AUTH_STATE: AuthState = {
   isAuthenticated: false,
+  userEmail: null,
   sessionId: null,
-  isBootstrapping: true,
+  isLoading: false,
+  hydrationStatus: "pending",
 };
 
 const INITIAL_FILTER_STATE: FilterState = {
@@ -56,124 +67,162 @@ const INITIAL_CART_STATE: CartState = {
   items: {},
 };
 
-export const useAppStore = create<AppStore>()((set) => ({
-  auth: INITIAL_AUTH_STATE,
-  filter: INITIAL_FILTER_STATE,
-  cart: INITIAL_CART_STATE,
+const AUTH_SIMULATION_DELAY_MS = 1_000;
 
-  bootstrapSession: () =>
-    set((state) => ({
-      auth: {
-        ...state.auth,
-        isBootstrapping: true,
-      },
-    })),
+const appStorage = createJSONStorage<PersistedAppState>(() => {
+  if (Platform.OS === "web") {
+    return localStorage;
+  }
 
-  finishBootstrap: () =>
-    set((state) => ({
-      auth: {
-        ...state.auth,
-        isBootstrapping: false,
-      },
-    })),
+  return AsyncStorage;
+});
 
-  loginStub: (sessionId = "phase-1-session") =>
-    set((state) => ({
-      auth: {
-        ...state.auth,
-        isAuthenticated: true,
-        sessionId,
-        isBootstrapping: false,
-      },
-    })),
-
-  logout: () =>
-    set((state) => ({
-      auth: {
-        ...state.auth,
-        isAuthenticated: false,
-        sessionId: null,
-        isBootstrapping: false,
-      },
-      cart: {
-        ...state.cart,
-        items: {},
-      },
-    })),
-
-  setSearchQuery: (searchQuery) =>
-    set((state) => ({
-      filter: {
-        ...state.filter,
-        searchQuery,
-      },
-    })),
-
-  setCategory: (category) =>
-    set((state) => ({
-      filter: {
-        ...state.filter,
-        category,
-      },
-    })),
-
-  setSort: (sort) =>
-    set((state) => ({
-      filter: {
-        ...state.filter,
-        sort,
-      },
-    })),
-
-  clearFilters: () =>
-    set(() => ({
+export const useAppStore = create<AppStore>()(
+  persist<AppStore, [], [], PersistedAppState>(
+    (set) => ({
+      auth: INITIAL_AUTH_STATE,
       filter: INITIAL_FILTER_STATE,
-    })),
+      cart: INITIAL_CART_STATE,
 
-  setCartItemQuantity: (productId, quantity) =>
-    set((state) => {
-      if (quantity <= 0) {
-        const nextItems = { ...state.cart.items };
-        delete nextItems[productId];
-        return {
+      login: async (email: string, _password: string) => {
+        set((state) => ({
+          auth: {
+            ...state.auth,
+            isLoading: true,
+          },
+        }));
+
+        await new Promise<void>((resolve) => {
+          setTimeout(() => resolve(), AUTH_SIMULATION_DELAY_MS);
+        });
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const sessionId = `session-${Date.now()}`;
+
+        set((state) => ({
+          auth: {
+            ...state.auth,
+            isAuthenticated: true,
+            userEmail: normalizedEmail,
+            sessionId,
+            isLoading: false,
+            hydrationStatus: "ready",
+          },
+        }));
+      },
+
+      logout: () =>
+        set((state) => ({
+          auth: {
+            ...state.auth,
+            isAuthenticated: false,
+            userEmail: null,
+            sessionId: null,
+            isLoading: false,
+            hydrationStatus: "ready",
+          },
           cart: {
             ...state.cart,
-            items: nextItems,
+            items: {},
           },
-        };
-      }
+        })),
 
-      return {
-        cart: {
-          ...state.cart,
-          items: {
-            ...state.cart.items,
-            [productId]: {
-              productId,
-              quantity,
+      setSearchQuery: (searchQuery) =>
+        set((state) => ({
+          filter: {
+            ...state.filter,
+            searchQuery,
+          },
+        })),
+
+      setCategory: (category) =>
+        set((state) => ({
+          filter: {
+            ...state.filter,
+            category,
+          },
+        })),
+
+      setSort: (sort) =>
+        set((state) => ({
+          filter: {
+            ...state.filter,
+            sort,
+          },
+        })),
+
+      clearFilters: () =>
+        set(() => ({
+          filter: INITIAL_FILTER_STATE,
+        })),
+
+      setCartItemQuantity: (productId, quantity) =>
+        set((state) => {
+          if (quantity <= 0) {
+            const nextItems = { ...state.cart.items };
+            delete nextItems[productId];
+            return {
+              cart: {
+                ...state.cart,
+                items: nextItems,
+              },
+            };
+          }
+
+          return {
+            cart: {
+              ...state.cart,
+              items: {
+                ...state.cart.items,
+                [productId]: {
+                  productId,
+                  quantity,
+                },
+              },
             },
+          };
+        }),
+
+      removeCartItem: (productId) =>
+        set((state) => {
+          const nextItems = { ...state.cart.items };
+          delete nextItems[productId];
+          return {
+            cart: {
+              ...state.cart,
+              items: nextItems,
+            },
+          };
+        }),
+
+      clearCart: () =>
+        set((state) => ({
+          cart: {
+            ...state.cart,
+            items: {},
           },
-        },
-      };
+        })),
     }),
-
-  removeCartItem: (productId) =>
-    set((state) => {
-      const nextItems = { ...state.cart.items };
-      delete nextItems[productId];
-      return {
-        cart: {
-          ...state.cart,
-          items: nextItems,
+    {
+      name: "marketplace-app-store",
+      storage: appStorage,
+      partialize: (state): PersistedAppState => ({
+        auth: {
+          ...state.auth,
+          isLoading: false,
+          hydrationStatus: "ready" as const,
         },
-      };
-    }),
+        filter: state.filter,
+        cart: state.cart,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) {
+          return;
+        }
 
-  clearCart: () =>
-    set((state) => ({
-      cart: {
-        ...state.cart,
-        items: {},
+        state.auth.hydrationStatus = "ready";
+        state.auth.isLoading = false;
       },
-    })),
-}));
+    },
+  ),
+);

@@ -1,64 +1,82 @@
-import { Link } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Link, Redirect } from "expo-router";
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+
+import { AuthLoadingView } from "@/components/auth-gate-view";
+import { useAppStore } from "@/store/useAppStore";
 
 const ROUTE_LINKS: Array<{
-  href: "/search" | "/cart" | "/profile" | "/login" | "/splash";
+  href: "/search" | "/cart" | "/profile";
   label: string;
 }> = [
-  { href: "/search", label: "Go to Search stub" },
-  { href: "/cart", label: "Go to Cart stub" },
-  { href: "/profile", label: "Go to Profile stub" },
-  { href: "/login", label: "Open Login stub" },
-  { href: "/splash", label: "Open Splash stub" },
+  { href: "/search", label: "Browse Search" },
+  { href: "/cart", label: "Open Cart" },
+  { href: "/profile", label: "View Profile" },
 ];
 
 export default function HomeScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Marketplace Explorer</Text>
-      <Text style={styles.subtitle}>Phase 1 navigation entry placeholder</Text>
+  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
+  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
 
-      <View style={styles.linksContainer}>
+  if (hydrationStatus !== "ready") {
+    return <AuthLoadingView />;
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
+
+  return (
+    <SafeAreaView style={styles.marketplaceContainer}>
+      <View style={styles.marketplaceHero}>
+        <Text style={styles.marketplaceTitle}>Marketplace Explorer</Text>
+        <Text style={styles.marketplaceSubtitle}>
+          Authenticated baseline layout is active.
+        </Text>
+      </View>
+
+      <View style={styles.marketplaceLinksContainer}>
         {ROUTE_LINKS.map((route) => (
           <Link key={route.href} href={route.href} asChild>
-            <Pressable style={styles.linkButton}>
-              <Text style={styles.linkText}>{route.label}</Text>
+            <Pressable style={styles.marketplaceLinkButton}>
+              <Text style={styles.marketplaceLinkText}>{route.label}</Text>
             </Pressable>
           </Link>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  marketplaceContainer: {
     flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    gap: 12,
     backgroundColor: "#f8fafc",
+    paddingHorizontal: 20,
+    justifyContent: "center",
   },
-  title: {
+  marketplaceHero: {
+    marginBottom: 20,
+    gap: 8,
+  },
+  marketplaceTitle: {
     fontSize: 24,
     fontWeight: "700",
     color: "#0f172a",
   },
-  subtitle: {
+  marketplaceSubtitle: {
     fontSize: 16,
     color: "#334155",
-    marginBottom: 8,
   },
-  linksContainer: {
+  marketplaceLinksContainer: {
     gap: 10,
   },
-  linkButton: {
-    backgroundColor: "#1d4ed8",
+  marketplaceLinkButton: {
+    backgroundColor: "#1e293b",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  linkText: {
+  marketplaceLinkText: {
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "600",
