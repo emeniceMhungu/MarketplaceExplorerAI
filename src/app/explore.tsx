@@ -40,14 +40,6 @@ export default function ExploreScreen() {
     productsQuery,
   } = useExploreScreenState();
 
-  if (showAuthLoadingState) {
-    return <AuthLoadingView />;
-  }
-
-  if (shouldRedirectToLogin) {
-    return <Redirect href="/login" />;
-  }
-
   const renderProductItem = useCallback(
     ({ item }: { item: ExploreProductItem }) => (
       <View style={styles.productCell}>
@@ -77,6 +69,14 @@ export default function ExploreScreen() {
     ),
     [addProductToCart, router],
   );
+
+  if (showAuthLoadingState) {
+    return <AuthLoadingView />;
+  }
+
+  if (shouldRedirectToLogin) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>

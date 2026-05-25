@@ -18,24 +18,39 @@ export function ConnectivityBanner() {
   useEffect(() => {
     if (isOffline) {
       wasOfflineRef.current = true;
-      setShowReconnected(false);
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
+
+      const timeoutId = setTimeout(() => {
+        setShowReconnected(false);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+
+    if (!wasOfflineRef.current) {
       return;
     }
 
-    if (wasOfflineRef.current) {
+    const showTimeoutId = setTimeout(() => {
       setShowReconnected(true);
       reconnectTimeoutRef.current = setTimeout(() => {
         setShowReconnected(false);
         wasOfflineRef.current = false;
       }, RECONNECTED_BANNER_DURATION_MS);
-    }
+    }, 0);
 
     return () => {
+      clearTimeout(showTimeoutId);
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
   }, [isOffline]);

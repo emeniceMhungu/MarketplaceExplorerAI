@@ -48,6 +48,36 @@ export default function HomeScreen() {
     retry,
   } = productsQuery;
 
+  const renderItem = useCallback(
+    ({ item }: { item: InfiniteProductItem }) => (
+      <View style={styles.productCell}>
+        <ProductCard
+          imageUrl={item.imageUrl}
+          title={item.title}
+          brand={item.brand}
+          category={item.category}
+          price={item.price}
+          discountPercentage={item.discountPercentage}
+          rating={item.rating}
+          stock={item.stock}
+          onPress={() => {
+            router.push({
+              pathname: "/product/[id]",
+              params: {
+                id: String(item.id),
+                from: "index",
+              },
+            });
+          }}
+          onAddToCart={() => {
+            addProductToCart(item);
+          }}
+        />
+      </View>
+    ),
+    [addProductToCart, router],
+  );
+
   if (showAuthLoadingState) {
     return <AuthLoadingView />;
   }
@@ -104,36 +134,6 @@ export default function HomeScreen() {
       />
     );
   }
-
-  const renderItem = useCallback(
-    ({ item }: { item: InfiniteProductItem }) => (
-      <View style={styles.productCell}>
-        <ProductCard
-          imageUrl={item.imageUrl}
-          title={item.title}
-          brand={item.brand}
-          category={item.category}
-          price={item.price}
-          discountPercentage={item.discountPercentage}
-          rating={item.rating}
-          stock={item.stock}
-          onPress={() => {
-            router.push({
-              pathname: "/product/[id]",
-              params: {
-                id: String(item.id),
-                from: "index",
-              },
-            });
-          }}
-          onAddToCart={() => {
-            addProductToCart(item);
-          }}
-        />
-      </View>
-    ),
-    [addProductToCart, router],
-  );
 
   return (
     <SafeAreaView style={styles.container}>
