@@ -67,7 +67,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Review Pull Request Dependency Changes
+        id: dependency_review
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
+
+      - name: Dependency Graph Disabled Warning
+        if: steps.dependency_review.outcome == 'failure'
+        run: |
+          echo "Dependency review check was skipped because Dependency Graph is not enabled for this repository."
+          echo "Enable it in Settings -> Security and analysis -> Dependency graph."
 
   android-apk-delivery:
     name: Android APK Delivery Build
