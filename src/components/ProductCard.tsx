@@ -2,6 +2,8 @@ import { Image } from "expo-image";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { evaluateProductRules } from "@/domain/rulesEngine";
+
 export type ProductCardProps = {
   imageUrl: string;
   title: string;
@@ -25,12 +27,23 @@ function ProductCardComponent({
   stock,
   onAddToCart,
 }: ProductCardProps) {
-  const stockStatusLabel = stock > 0 ? `${stock} in stock` : "Out of stock";
+  const rules = evaluateProductRules({
+    price,
+    rating,
+    stock,
+  });
+
+  const stockStatusLabel = rules.lowStock
+    ? `Almost Sold Out (${stock})`
+    : stock > 0
+      ? `${stock} in stock`
+      : "Out of stock";
   const brandCategoryLabel = `${brand} • ${category}`;
   const metricsLabel = `$${price.toFixed(2)} | -${discountPercentage.toFixed(
     1,
   )}% | ★ ${rating.toFixed(1)}`;
-  const addToCartDisabled = typeof onAddToCart !== "function";
+  const addToCartDisabled =
+    typeof onAddToCart !== "function" || !rules.canAddToCart;
 
   return (
     <View style={styles.card}>
@@ -57,16 +70,42 @@ function ProductCardComponent({
           </Text>
         </View>
 
+        <View style={styles.badgesRow}>
+          {rules.premiumChoice ? (
+            <View style={[styles.badge, styles.premiumBadge]}>
+              <Text style={[styles.badgeText, styles.premiumBadgeText]}>
+                Premium Choice
+              </Text>
+            </View>
+          ) : null}
+
+          {rules.lowStock ? (
+            <View style={[styles.badge, styles.lowStockBadge]}>
+              <Text style={[styles.badgeText, styles.lowStockBadgeText]}>
+                Low Stock
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
         <Text style={styles.stockStatus} numberOfLines={1}>
           {stockStatusLabel}
         </Text>
+
+        {!rules.canAddToCart && rules.disabledReason ? (
+          <Text style={styles.disabledReason} numberOfLines={2}>
+            {rules.disabledReason}
+          </Text>
+        ) : null}
 
         <Pressable
           style={[styles.button, addToCartDisabled && styles.buttonDisabled]}
           onPress={onAddToCart}
           disabled={addToCartDisabled}
         >
-          <Text style={styles.buttonText}>Add to Cart</Text>
+          <Text style={styles.buttonText}>
+            {rules.canAddToCart ? "Add to Cart" : "Unavailable"}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -125,10 +164,49 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: "700",
   },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    minHeight: 22,
+    alignItems: "center",
+  },
+  badge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+  },
+  premiumBadge: {
+    backgroundColor: "#fef9c3",
+    borderColor: "#facc15",
+  },
+  premiumBadgeText: {
+    color: "#713f12",
+  },
+  lowStockBadge: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#fca5a5",
+  },
+  lowStockBadgeText: {
+    color: "#7f1d1d",
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
   stockStatus: {
     fontSize: 12,
     color: "#64748b",
     fontWeight: "600",
+  },
+  disabledReason: {
+    fontSize: 11,
+    color: "#991b1b",
+    fontWeight: "600",
+    lineHeight: 15,
+    minHeight: 15,
   },
   button: {
     minHeight: 40,

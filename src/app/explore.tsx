@@ -36,6 +36,7 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 export default function ExploreScreen() {
   const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
   const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
+  const addItem = useAppStore((state) => state.addItem);
 
   const searchQuery = useAppStore((state) => state.filter.searchQuery);
   const activeCategory = useAppStore((state) => state.filter.category);
@@ -85,6 +86,18 @@ export default function ExploreScreen() {
         discountPercentage={item.discountPercentage}
         rating={item.rating}
         stock={item.stock}
+        onAddToCart={() => {
+          addItem({
+            productId: item.id,
+            title: item.title,
+            brand: item.brand,
+            category: item.category,
+            imageUrl: item.imageUrl,
+            price: item.price,
+            rating: item.rating,
+            stock: item.stock,
+          });
+        }}
       />
     </View>
   );
