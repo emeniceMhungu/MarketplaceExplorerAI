@@ -1,5 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { Redirect, useRouter } from "expo-router";
+import { useCallback } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -47,31 +48,34 @@ export default function ExploreScreen() {
     return <Redirect href="/login" />;
   }
 
-  const renderProductItem = ({ item }: { item: ExploreProductItem }) => (
-    <View style={styles.productCell}>
-      <ProductCard
-        imageUrl={item.imageUrl}
-        title={item.title}
-        brand={item.brand}
-        category={item.category}
-        price={item.price}
-        discountPercentage={item.discountPercentage}
-        rating={item.rating}
-        stock={item.stock}
-        onPress={() => {
-          router.push({
-            pathname: "/product/[id]",
-            params: {
-              id: String(item.id),
-              from: "explore",
-            },
-          });
-        }}
-        onAddToCart={() => {
-          addProductToCart(item);
-        }}
-      />
-    </View>
+  const renderProductItem = useCallback(
+    ({ item }: { item: ExploreProductItem }) => (
+      <View style={styles.productCell}>
+        <ProductCard
+          imageUrl={item.imageUrl}
+          title={item.title}
+          brand={item.brand}
+          category={item.category}
+          price={item.price}
+          discountPercentage={item.discountPercentage}
+          rating={item.rating}
+          stock={item.stock}
+          onPress={() => {
+            router.push({
+              pathname: "/product/[id]",
+              params: {
+                id: String(item.id),
+                from: "explore",
+              },
+            });
+          }}
+          onAddToCart={() => {
+            addProductToCart(item);
+          }}
+        />
+      </View>
+    ),
+    [addProductToCart, router],
   );
 
   return (
