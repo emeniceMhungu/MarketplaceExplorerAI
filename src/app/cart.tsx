@@ -1,13 +1,7 @@
 import { Image } from "expo-image";
 import { Redirect } from "expo-router";
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
 import { BULK_DISCOUNT_THRESHOLD } from "@/domain/rulesEngine";
