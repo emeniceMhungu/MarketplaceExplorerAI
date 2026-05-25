@@ -152,3 +152,20 @@ Operational verification notes:
 
 - Local TypeScript gate is valid and aligned with CI: npx tsc --noEmit
 - Lint gate is valid and aligned with CI: npm run lint
+
+---
+
+## 🧪 6. Automated Testing Suite & Domain Verification
+
+Our automated testing strategy uses deterministic unit tests focused on business-rule correctness and store-level pricing behavior. The suite validates premium badge eligibility, stock and cart eligibility restrictions, quantity clamping for low-stock products, and bulk discount application through Zustand cart metrics.
+
+Run the full local test suite with:
+
+```bash
+npm test
+```
+
+CI Integration (Stage 1):
+
+- Stage 1 of our CI pipeline executes the repository quality gates (type-checking + lint enforcement).
+- The automated unit test command is configured in the scripts block and can be executed in the same Stage 1 validation phase for deterministic pre-merge domain verification.
