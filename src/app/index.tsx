@@ -1,5 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
@@ -22,6 +22,7 @@ const PRODUCT_CARD_ESTIMATED_HEIGHT = 360;
 const PRODUCT_COLUMN_COUNT = 2;
 
 export default function HomeScreen() {
+  const router = useRouter();
   const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
   const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
   const addItem = useAppStore((state) => state.addItem);
@@ -93,6 +94,15 @@ export default function HomeScreen() {
         discountPercentage={item.discountPercentage}
         rating={item.rating}
         stock={item.stock}
+        onPress={() => {
+          router.push({
+            pathname: "/product/[id]",
+            params: {
+              id: String(item.id),
+              from: "index",
+            },
+          });
+        }}
         onAddToCart={() => {
           addItem({
             productId: item.id,

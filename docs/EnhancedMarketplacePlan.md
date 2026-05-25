@@ -608,23 +608,27 @@ AC checklist:
 ### Phase 6 Tracker: Product Details and Related Products
 
 Planned window: 16h25-17h20
-Actual start: Not started (as of 13h48)
-Actual end: Not completed (as of 13h48)
-Completeness: 0%
-Status: Not Started
+Actual start: 18h16
+Actual end: 18h42
+Completeness: 100%
+Status: Completed
 
 Task checklist:
 
-- [ ] Product detail navigation and identity resolution
-- [ ] Gallery, full description, rating/availability display
-- [ ] Related products section
-- [ ] Add-to-cart interactions aligned with domain rule outputs
+- [x] Product detail navigation and identity resolution
+- [x] Gallery, full description, rating/availability display
+- [x] Related products section
+- [x] Add-to-cart interactions aligned with domain rule outputs
 
 AC checklist:
 
-- [ ] Selected product identity remains consistent from list to detail
-- [ ] Rule-driven badges and eligibility states match list behavior
-- [ ] Related products render safely under missing-data conditions
+- [x] Selected product identity remains consistent from list to detail
+- [x] Rule-driven badges and eligibility states match list behavior
+- [x] Related products render safely under missing-data conditions
+
+Notes:
+
+- Floating header polish (back button stays at top during scroll) deferred to Phase 8 UX polish pass
 
 ### Phase 7 Tracker: Offline Resilience and Failure Handling Hardening
 
@@ -663,6 +667,8 @@ Task checklist:
 - [ ] Rendering optimization pass (memoization, selector granularity, list item stability)
 - [ ] Request lifecycle audit (deduping, cancellation/race safety)
 - [ ] Accessibility and UX polish pass
+  - [ ] Floating back button on product details (absolute positioning overlay)
+  - [ ] Gallery centering and paging refinements
 - [ ] Manual regression suite
 - [ ] README and delivery artifact completion
 - [ ] Optional: unit tests for domain rules/selectors

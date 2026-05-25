@@ -13,6 +13,7 @@ export type ProductCardProps = {
   discountPercentage: number;
   rating: number;
   stock: number;
+  onPress?: () => void;
   onAddToCart?: () => void;
 };
 
@@ -25,6 +26,7 @@ function ProductCardComponent({
   discountPercentage,
   rating,
   stock,
+  onPress,
   onAddToCart,
 }: ProductCardProps) {
   const rules = evaluateProductRules({
@@ -44,15 +46,18 @@ function ProductCardComponent({
   )}% | ★ ${rating.toFixed(1)}`;
   const addToCartDisabled =
     typeof onAddToCart !== "function" || !rules.canAddToCart;
+  const detailPressDisabled = typeof onPress !== "function";
 
   return (
     <View style={styles.card}>
-      <Image
-        source={imageUrl}
-        style={styles.image}
-        contentFit="cover"
-        transition={150}
-      />
+      <Pressable onPress={onPress} disabled={detailPressDisabled}>
+        <Image
+          source={imageUrl}
+          style={styles.image}
+          contentFit="cover"
+          transition={150}
+        />
+      </Pressable>
 
       <View style={styles.content}>
         <View style={styles.headerSection}>
