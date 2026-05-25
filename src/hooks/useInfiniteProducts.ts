@@ -46,16 +46,68 @@ export type InfiniteProductItem = {
 
 export type UseInfiniteProductsResult = {
   products: InfiniteProductItem[];
+  showLoadingState: boolean;
+  showErrorState: boolean;
+  showEmptyState: boolean;
+  showRefreshErrorBanner: boolean;
+  refreshErrorMessage: string | null;
   isInitialLoading: boolean;
   isRefreshing: boolean;
   isLoadingMore: boolean;
   hasNextPage: boolean;
   isEmpty: boolean;
+  isError: boolean;
+  errorKind: "offline" | "timeout" | "server" | "unknown" | null;
   errorMessage: string | null;
   loadMore: () => void;
   refresh: () => Promise<void>;
   retry: () => Promise<void>;
 };
+
+function classifyProductsError(error: unknown): {
+  kind: "offline" | "timeout" | "server" | "unknown";
+  message: string;
+} {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+
+    if (
+      message.includes("network request failed") ||
+      message.includes("failed to fetch") ||
+      message.includes("network")
+    ) {
+      return {
+        kind: "offline",
+        message:
+          "No internet connection detected. Reconnect and try loading products again.",
+      };
+    }
+
+    if (message.includes("timeout") || message.includes("timed out")) {
+      return {
+        kind: "timeout",
+        message: "The request timed out. Please retry.",
+      };
+    }
+
+    if (message.includes("unable to load products (")) {
+      return {
+        kind: "server",
+        message: error.message,
+      };
+    }
+
+    return {
+      kind: "unknown",
+      message: error.message,
+    };
+  }
+
+  return {
+    kind: "unknown",
+    message: "Unexpected network error",
+  };
+}
 
 function normalizeProduct(product: DummyJsonProduct): InfiniteProductItem {
   const primaryImage =
@@ -165,14 +217,33 @@ export function useInfiniteProducts(enabled = true): UseInfiniteProductsResult {
     await query.refetch();
   }, [enabled, query]);
 
+  const resolvedError = query.error ? classifyProductsError(query.error) : null;
+  const isInitialLoading = query.isPending && products.length === 0;
+  const isRefreshing = query.isRefetching && !query.isFetchingNextPage;
+  const isLoadingMore = query.isFetchingNextPage;
+  const hasNextPage = Boolean(query.hasNextPage);
+  const isError = Boolean(query.error);
+  const isEmpty = !query.isPending && products.length === 0 && !query.error;
+
   return {
     products,
-    isInitialLoading: query.isPending && products.length === 0,
-    isRefreshing: query.isRefetching && !query.isFetchingNextPage,
-    isLoadingMore: query.isFetchingNextPage,
-    hasNextPage: Boolean(query.hasNextPage),
-    isEmpty: !query.isPending && products.length === 0 && !query.error,
-    errorMessage: query.error instanceof Error ? query.error.message : null,
+    showLoadingState: isInitialLoading,
+    showErrorState: isError && !products.length,
+    showEmptyState: isEmpty && !isError,
+    showRefreshErrorBanner: isError && isRefreshing,
+    refreshErrorMessage:
+      isError && isRefreshing
+        ? (resolvedError?.message ??
+          "Unable to refresh feed. Showing cached products.")
+        : null,
+    isInitialLoading,
+    isRefreshing,
+    isLoadingMore,
+    hasNextPage,
+    isEmpty,
+    isError,
+    errorKind: resolvedError?.kind ?? null,
+    errorMessage: resolvedError?.message ?? null,
     loadMore,
     refresh,
     retry,

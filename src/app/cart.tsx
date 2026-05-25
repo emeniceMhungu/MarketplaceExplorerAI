@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
 import { Redirect } from "expo-router";
-import { useMemo } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -11,74 +10,46 @@ import {
 } from "react-native";
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
-import {
-  BULK_DISCOUNT_THRESHOLD,
-  evaluateCartMetrics,
-} from "@/domain/rulesEngine";
-import { useAppStore } from "@/store/useAppStore";
+import { BULK_DISCOUNT_THRESHOLD } from "@/domain/rulesEngine";
+import { useCartScreenState } from "@/hooks/useCartScreenState";
 
 export default function CartScreen() {
-  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
-  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
-  const cartItemsById = useAppStore((state) => state.cart.items);
-  const incrementItemQuantity = useAppStore(
-    (state) => state.incrementItemQuantity,
-  );
-  const decrementItemQuantity = useAppStore(
-    (state) => state.decrementItemQuantity,
-  );
-  const removeItem = useAppStore((state) => state.removeItem);
-  const clearCart = useAppStore((state) => state.clearCart);
+  const {
+    shouldRedirectToLogin,
+    showLoadingState,
+    showEmptyState,
+    cartItems,
+    itemCount,
+    uniqueItemCount,
+    subtotal,
+    discountAmount,
+    finalTotal,
+    hasBulkDiscount,
+    thresholdGap,
+    incrementItemQuantity,
+    decrementItemQuantity,
+    removeItem,
+    clearCart,
+  } = useCartScreenState();
 
-  const cartItems = useMemo(
-    () => Object.values(cartItemsById),
-    [cartItemsById],
-  );
-  const cartMetrics = useMemo(() => {
-    const subtotal = cartItems.reduce((acc, item) => {
-      const price = Number.isFinite(item.price) ? item.price : 0;
-      const quantity = Number.isFinite(item.quantity) ? item.quantity : 0;
-      return acc + price * quantity;
-    }, 0);
-
-    const pricing = evaluateCartMetrics(subtotal);
-    const itemCount = cartItems.reduce((acc, item) => {
-      const quantity = Number.isFinite(item.quantity) ? item.quantity : 0;
-      return acc + quantity;
-    }, 0);
-
-    return {
-      ...pricing,
-      itemCount,
-      uniqueItemCount: cartItems.length,
-    };
-  }, [cartItems]);
-
-  if (hydrationStatus !== "ready") {
+  if (showLoadingState) {
     return <AuthLoadingView />;
   }
 
-  if (!isAuthenticated) {
+  if (shouldRedirectToLogin) {
     return <Redirect href="/login" />;
   }
-
-  const thresholdGap = Math.max(
-    0,
-    BULK_DISCOUNT_THRESHOLD - cartMetrics.subtotal,
-  );
-  const hasBulkDiscount = cartMetrics.discountAmount > 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Cart</Text>
         <Text style={styles.headerSubtitle}>
-          {cartMetrics.itemCount} items across {cartMetrics.uniqueItemCount}{" "}
-          products
+          {itemCount} items across {uniqueItemCount} products
         </Text>
       </View>
 
-      {cartItems.length === 0 ? (
+      {showEmptyState ? (
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateTitle}>Your cart is empty</Text>
           <Text style={styles.emptyStateText}>
@@ -148,9 +119,7 @@ export default function CartScreen() {
 
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>
-                ${cartMetrics.subtotal.toFixed(2)}
-              </Text>
+              <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
             </View>
 
             {hasBulkDiscount ? (
@@ -158,7 +127,7 @@ export default function CartScreen() {
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Bulk discount (10%)</Text>
                   <Text style={styles.discountValue}>
-                    -${cartMetrics.discountAmount.toFixed(2)}
+                    -${discountAmount.toFixed(2)}
                   </Text>
                 </View>
 
@@ -167,7 +136,7 @@ export default function CartScreen() {
                 <View style={styles.summaryRow}>
                   <Text style={styles.totalLabel}>Final total</Text>
                   <Text style={styles.totalValue}>
-                    ${cartMetrics.finalTotal.toFixed(2)}
+                    ${finalTotal.toFixed(2)}
                   </Text>
                 </View>
               </>

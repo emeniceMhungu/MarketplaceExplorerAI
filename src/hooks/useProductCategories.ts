@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 type DummyCategoryEntry =
   | string
@@ -18,13 +18,19 @@ export type ProductCategory = {
 
 export type UseProductCategoriesResult = {
   categories: ProductCategory[];
+  showLoadingState: boolean;
+  showErrorState: boolean;
+  showEmptyState: boolean;
   isLoading: boolean;
   isError: boolean;
+  isEmpty: boolean;
   errorMessage: string | null;
   retry: () => Promise<void>;
 };
 
-function normalizeCategoryEntry(entry: DummyCategoryEntry): ProductCategory | null {
+function normalizeCategoryEntry(
+  entry: DummyCategoryEntry,
+): ProductCategory | null {
   if (typeof entry === "string") {
     const key = entry.trim();
     if (!key) {
@@ -48,7 +54,9 @@ function normalizeCategoryEntry(entry: DummyCategoryEntry): ProductCategory | nu
   };
 }
 
-async function fetchProductCategories(signal?: AbortSignal): Promise<ProductCategory[]> {
+async function fetchProductCategories(
+  signal?: AbortSignal,
+): Promise<ProductCategory[]> {
   const response = await fetch(CATEGORIES_ENDPOINT, { signal });
 
   if (!response.ok) {
@@ -76,7 +84,9 @@ async function fetchProductCategories(signal?: AbortSignal): Promise<ProductCate
   return categories;
 }
 
-export function useProductCategories(enabled = true): UseProductCategoriesResult {
+export function useProductCategories(
+  enabled = true,
+): UseProductCategoriesResult {
   const query = useQuery({
     queryKey: ["products", "categories"],
     enabled,
@@ -86,11 +96,18 @@ export function useProductCategories(enabled = true): UseProductCategoriesResult
   });
 
   const categories = useMemo(() => query.data ?? [], [query.data]);
+  const isLoading = query.isPending;
+  const isError = query.isError;
+  const isEmpty = !query.isPending && !query.isError && categories.length === 0;
 
   return {
     categories,
-    isLoading: query.isPending,
-    isError: query.isError,
+    showLoadingState: isLoading,
+    showErrorState: isError && !categories.length,
+    showEmptyState: isEmpty && !isError,
+    isLoading,
+    isError,
+    isEmpty,
     errorMessage: query.error instanceof Error ? query.error.message : null,
     retry: async () => {
       await query.refetch();

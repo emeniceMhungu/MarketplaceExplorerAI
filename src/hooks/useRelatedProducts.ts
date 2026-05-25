@@ -44,8 +44,12 @@ export type UseRelatedProductsParams = {
 
 export type UseRelatedProductsResult = {
   products: RelatedProduct[];
+  showLoadingState: boolean;
+  showErrorState: boolean;
+  showEmptyState: boolean;
   isLoading: boolean;
   isError: boolean;
+  isEmpty: boolean;
   errorMessage: string | null;
   retry: () => Promise<void>;
 };
@@ -131,11 +135,18 @@ export function useRelatedProducts({
   });
 
   const products = useMemo(() => query.data ?? [], [query.data]);
+  const isLoading = query.isPending;
+  const isError = query.isError;
+  const isEmpty = !query.isPending && !query.isError && products.length === 0;
 
   return {
     products,
-    isLoading: query.isPending,
-    isError: query.isError,
+    showLoadingState: isLoading,
+    showErrorState: isError && !products.length,
+    showEmptyState: isEmpty && !isError,
+    isLoading,
+    isError,
+    isEmpty,
     errorMessage: query.error instanceof Error ? query.error.message : null,
     retry: async () => {
       await query.refetch();

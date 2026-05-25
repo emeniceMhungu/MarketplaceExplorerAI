@@ -633,26 +633,32 @@ Notes:
 ### Phase 7 Tracker: Offline Resilience and Failure Handling Hardening
 
 Planned window: 17h20-18h25
-Actual start: Not started (as of 13h48)
-Actual end: Not completed (as of 13h48)
-Completeness: 0%
-Status: Not Started
+Actual start: 18h30
+Actual end: 20h05
+Completeness: 100%
+Status: Completed
 
 Task checklist:
 
-- [ ] Offline detection and no-internet messaging
-- [ ] Cached-product fallback rendering
-- [ ] Retry actions for recoverable failures
-- [ ] Error and empty states across feed/search/pagination/details
-- [ ] Simulated timeout/error/empty result verification paths
+- [x] Offline detection and no-internet messaging
+- [x] Cached-product fallback rendering
+- [x] Retry actions for recoverable failures
+- [x] Error and empty states across feed/search/pagination/details
+- [x] Simulated timeout/error/empty result verification paths
 
 AC checklist:
 
-- [ ] Offline after prior load shows cached products
-- [ ] Offline cart remains accessible and mutable
-- [ ] Retry recovers correctly when connectivity returns
-- [ ] Timeout/failure messaging is actionable and clear
-- [ ] No dead-end user flows during network instability
+- [x] Offline after prior load shows cached products
+- [x] Offline cart remains accessible and mutable
+- [x] Retry recovers correctly when connectivity returns
+- [x] Timeout/failure messaging is actionable and clear
+- [x] No dead-end user flows during network instability
+
+Notes:
+
+- Network reachability is abstracted through a dedicated hook layer and mounted globally via root-layout banner.
+- Unknown web reachability states are conservatively treated as online to avoid offline flicker.
+- Home and Explore preserve previously loaded results when transient/offline errors occur and expose explicit retry actions.
 
 ### Phase 8 Tracker: Performance Tuning, Test Pass, and Release Readiness
 
