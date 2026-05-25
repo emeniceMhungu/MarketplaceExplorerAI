@@ -155,7 +155,7 @@ Operational verification notes:
 
 ---
 
-## 🧪 6. Automated Testing Suite & Domain Verification
+## 🧪 9. Automated Testing Suite & Domain Verification
 
 Our automated testing strategy uses deterministic unit tests focused on business-rule correctness and store-level pricing behavior. The suite validates premium badge eligibility, stock and cart eligibility restrictions, quantity clamping for low-stock products, and bulk discount application through Zustand cart metrics.
 
