@@ -71,6 +71,13 @@ export default function RootLayout() {
             href: protectedHref,
           }}
         />
+        <Tabs.Screen
+          name="product/[id]"
+          options={{
+            title: "Product Details",
+            href: null,
+          }}
+        />
       </Tabs>
     </QueryClientProvider>
   );

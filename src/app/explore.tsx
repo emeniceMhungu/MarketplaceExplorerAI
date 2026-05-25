@@ -1,5 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
@@ -34,6 +34,7 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 ];
 
 export default function ExploreScreen() {
+  const router = useRouter();
   const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
   const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
   const addItem = useAppStore((state) => state.addItem);
@@ -86,6 +87,15 @@ export default function ExploreScreen() {
         discountPercentage={item.discountPercentage}
         rating={item.rating}
         stock={item.stock}
+        onPress={() => {
+          router.push({
+            pathname: "/product/[id]",
+            params: {
+              id: String(item.id),
+              from: "explore",
+            },
+          });
+        }}
         onAddToCart={() => {
           addItem({
             productId: item.id,
