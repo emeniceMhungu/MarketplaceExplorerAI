@@ -46,9 +46,9 @@ export default function RootLayout() {
         />
         <Tabs.Screen name="index" options={{ title: "Home" }} />
         <Tabs.Screen
-          name="search"
+          name="explore"
           options={{
-            title: "Search",
+            title: "Explore",
             href: isAuthenticated ? undefined : null,
           }}
         />
@@ -64,13 +64,6 @@ export default function RootLayout() {
           options={{
             title: "Profile",
             href: isAuthenticated ? undefined : null,
-          }}
-        />
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: "Explore",
-            href: null,
           }}
         />
       </Tabs>
