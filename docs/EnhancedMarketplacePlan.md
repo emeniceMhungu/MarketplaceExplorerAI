@@ -484,7 +484,7 @@ Governance checkpoints:
 
 Use this section during delivery to stamp timing and progress for each phase.
 
-Last tracker update: 16h30
+Last tracker update: 17h12
 
 ### Phase 1 Tracker: Foundation and Architecture Skeleton
 
@@ -560,26 +560,26 @@ AC checklist:
 ### Phase 4 Tracker: Search, Category Filter, and Sorting
 
 Planned window: 14h10-15h10
-Actual start: Not started (as of 13h48)
-Actual end: Not completed (as of 13h48)
-Completeness: 0%
-Status: Not Started
+Actual start: 16h40
+Actual end: 17h12
+Completeness: 100%
+Status: Completed
 
 Task checklist:
 
-- [ ] Search input with debounce
-- [ ] Category listing and selection
-- [ ] Sort options: price ascending, price descending, highest rated
-- [ ] State preservation across navigation
-- [ ] Pagination compatibility under active filters
+- [x] Search input with debounce
+- [x] Category listing and selection
+- [x] Sort options: price ascending, price descending, highest rated
+- [x] State preservation across navigation
+- [x] Pagination compatibility under active filters
 
 AC checklist:
 
-- [ ] Rapid typing does not issue one request per keystroke
-- [ ] Category changes reset and fetch correct context
-- [ ] Sorting is consistently applied
-- [ ] Navigating to details and back preserves context
-- [ ] Pagination functions under filtered/search results
+- [x] Rapid typing does not issue one request per keystroke
+- [x] Category changes reset and fetch correct context
+- [x] Sorting is consistently applied
+- [x] Navigating to details and back preserves context
+- [x] Pagination functions under filtered/search results
 
 ### Phase 5 Tracker: Business Rules Engine and Cart Calculations
 
