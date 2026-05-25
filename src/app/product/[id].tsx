@@ -1,9 +1,7 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   SafeAreaView,
@@ -15,28 +13,13 @@ import {
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
 import { ProductCard } from "@/components/ProductCard";
-import { evaluateProductRules } from "@/domain/rulesEngine";
-import { useProductDetails } from "@/hooks/useProductDetails";
-import { RelatedProduct, useRelatedProducts } from "@/hooks/useRelatedProducts";
-import { useAppStore } from "@/store/useAppStore";
+import {
+  PRODUCT_DETAILS_GALLERY_ITEM_WIDTH,
+  useProductDetailsScreenState,
+} from "@/hooks/useProductDetailsScreenState";
+import { RelatedProduct } from "@/hooks/useRelatedProducts";
 
 const GALLERY_HORIZONTAL_MARGIN = 12;
-const GALLERY_ITEM_WIDTH =
-  Dimensions.get("window").width - GALLERY_HORIZONTAL_MARGIN * 2;
-
-function resolveProductId(rawId: string | string[] | undefined): number | null {
-  const firstValue = Array.isArray(rawId) ? rawId[0] : rawId;
-  if (!firstValue) {
-    return null;
-  }
-
-  const parsed = Number(firstValue);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-
-  return Math.floor(parsed);
-}
 
 export default function ProductDetailsScreen() {
   const { id, from } = useLocalSearchParams<{
@@ -45,44 +28,46 @@ export default function ProductDetailsScreen() {
   }>();
   const router = useRouter();
 
-  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
-  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
-  const addItem = useAppStore((state) => state.addItem);
-
-  const productId = useMemo(() => resolveProductId(id), [id]);
-  const sourceRoute = useMemo(() => {
-    const source = Array.isArray(from) ? from[0] : from;
-    return source === "explore" ? "/explore" : "/";
-  }, [from]);
-
-  const sourceParam = sourceRoute === "/explore" ? "explore" : "index";
+  const {
+    showAuthLoadingState,
+    shouldRedirectToLogin,
+    showInvalidProductState,
+    showLoadingState,
+    showErrorState,
+    sourceRoute,
+    sourceParam,
+    product,
+    rules,
+    addToCartDisabled,
+    reviewCount,
+    averageReviewRating,
+    detailsErrorMessage,
+    retryDetails,
+    galleryImages,
+    gallerySingleImageCentered,
+    relatedProducts,
+    showRelatedLoadingState,
+    showRelatedErrorState,
+    showRelatedEmptyState,
+    relatedErrorMessage,
+    retryRelated,
+    addCurrentProductToCart,
+    addRelatedProductToCart,
+  } = useProductDetailsScreenState({ id, from });
 
   const navigateBackToSource = () => {
     router.replace(sourceRoute);
   };
 
-  const detailsQuery = useProductDetails(
-    productId,
-    isAuthenticated && hydrationStatus === "ready",
-  );
-
-  const relatedQuery = useRelatedProducts({
-    category: detailsQuery.product?.category ?? null,
-    currentProductId: detailsQuery.product?.id ?? null,
-    enabled:
-      isAuthenticated && hydrationStatus === "ready" && !!detailsQuery.product,
-    limit: 8,
-  });
-
-  if (hydrationStatus !== "ready") {
+  if (showAuthLoadingState) {
     return <AuthLoadingView />;
   }
 
-  if (!isAuthenticated) {
+  if (shouldRedirectToLogin) {
     return <Redirect href="/login" />;
   }
 
-  if (productId === null) {
+  if (showInvalidProductState) {
     return (
       <SafeAreaView style={styles.centeredStateContainer}>
         <Text style={styles.stateTitle}>Invalid product link</Text>
@@ -96,7 +81,7 @@ export default function ProductDetailsScreen() {
     );
   }
 
-  if (detailsQuery.isLoading || !detailsQuery.product) {
+  if (showLoadingState) {
     return (
       <SafeAreaView style={styles.centeredStateContainer}>
         <ActivityIndicator size="large" color="#1d4ed8" />
@@ -105,52 +90,22 @@ export default function ProductDetailsScreen() {
     );
   }
 
-  if (detailsQuery.isError) {
+  if (showErrorState) {
     return (
       <SafeAreaView style={styles.centeredStateContainer}>
         <Text style={styles.stateTitle}>Unable to load product details</Text>
         <Text style={styles.stateSubtitle}>
-          {detailsQuery.errorMessage ?? "Unexpected network error"}
+          {detailsErrorMessage ?? "Unexpected network error"}
         </Text>
         <Pressable
           style={styles.actionButton}
-          onPress={() => void detailsQuery.retry()}
+          onPress={() => void retryDetails()}
         >
           <Text style={styles.actionButtonText}>Retry</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
-
-  const product = detailsQuery.product;
-  const rules = evaluateProductRules({
-    price: product.price,
-    rating: product.rating,
-    stock: product.stock,
-  });
-
-  const averageReviewRating =
-    product.reviews.length > 0
-      ? product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-        product.reviews.length
-      : product.rating;
-
-  const addToCartDisabled = !rules.canAddToCart;
-
-  const galleryImages =
-    product.images.length > 0 ? product.images : [product.imageUrl];
-
-  const gallerySingleImageCentered = useMemo(
-    () =>
-      galleryImages.length === 1
-        ? ({
-            flexGrow: 1,
-            justifyContent: "center" as const,
-            alignItems: "center" as const,
-          } as const)
-        : undefined,
-    [galleryImages.length],
-  );
 
   const renderRelatedItem = ({ item }: { item: RelatedProduct }) => (
     <View style={styles.relatedItemCell}>
@@ -173,16 +128,7 @@ export default function ProductDetailsScreen() {
           })
         }
         onAddToCart={() => {
-          addItem({
-            productId: item.id,
-            title: item.title,
-            brand: item.brand,
-            category: item.category,
-            imageUrl: item.imageUrl,
-            price: item.price,
-            rating: item.rating,
-            stock: item.stock,
-          });
+          addRelatedProductToCart(item);
         }}
       />
     </View>
@@ -209,7 +155,7 @@ export default function ProductDetailsScreen() {
               : styles.galleryContainer
           }
           scrollEventThrottle={16}
-          snapToInterval={GALLERY_ITEM_WIDTH + 10}
+          snapToInterval={PRODUCT_DETAILS_GALLERY_ITEM_WIDTH + 10}
           snapToAlignment="center"
           decelerationRate="fast"
           renderItem={({ item }) => (
@@ -217,7 +163,7 @@ export default function ProductDetailsScreen() {
               source={item}
               style={[
                 styles.galleryImage,
-                { width: GALLERY_ITEM_WIDTH, height: 220 },
+                { width: PRODUCT_DETAILS_GALLERY_ITEM_WIDTH, height: 220 },
               ]}
               contentFit="cover"
             />
@@ -263,8 +209,7 @@ export default function ProductDetailsScreen() {
             {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
           </Text>
           <Text style={styles.reviewsSummary}>
-            Reviews: {product.reviews.length} • Avg{" "}
-            {averageReviewRating.toFixed(1)}
+            Reviews: {reviewCount} • Avg {averageReviewRating.toFixed(1)}
           </Text>
 
           <Text style={styles.sectionTitle}>Description</Text>
@@ -280,18 +225,7 @@ export default function ProductDetailsScreen() {
               addToCartDisabled && styles.addButtonDisabled,
             ]}
             disabled={addToCartDisabled}
-            onPress={() => {
-              addItem({
-                productId: product.id,
-                title: product.title,
-                brand: product.brand,
-                category: product.category,
-                imageUrl: product.imageUrl,
-                price: product.price,
-                rating: product.rating,
-                stock: product.stock,
-              });
-            }}
+            onPress={addCurrentProductToCart}
           >
             <Text style={styles.addButtonText}>
               {addToCartDisabled ? "Unavailable" : "Add to Cart"}
@@ -300,22 +234,21 @@ export default function ProductDetailsScreen() {
 
           <View style={styles.relatedSectionHeader}>
             <Text style={styles.sectionTitle}>Related Products</Text>
-            {relatedQuery.isLoading ? (
+            {showRelatedLoadingState ? (
               <ActivityIndicator size="small" color="#1d4ed8" />
             ) : null}
           </View>
 
-          {relatedQuery.isError ? (
+          {showRelatedErrorState ? (
             <View style={styles.relatedStateBox}>
               <Text style={styles.relatedStateText}>
-                {relatedQuery.errorMessage ??
-                  "Unable to load related products."}
+                {relatedErrorMessage ?? "Unable to load related products."}
               </Text>
-              <Pressable onPress={() => void relatedQuery.retry()}>
+              <Pressable onPress={() => void retryRelated()}>
                 <Text style={styles.relatedRetryText}>Retry</Text>
               </Pressable>
             </View>
-          ) : relatedQuery.products.length === 0 ? (
+          ) : showRelatedEmptyState ? (
             <View style={styles.relatedStateBox}>
               <Text style={styles.relatedStateText}>
                 No related products available.
@@ -323,7 +256,7 @@ export default function ProductDetailsScreen() {
             </View>
           ) : (
             <FlatList
-              data={relatedQuery.products}
+              data={relatedProducts}
               horizontal
               keyExtractor={(item) => String(item.id)}
               renderItem={renderRelatedItem}

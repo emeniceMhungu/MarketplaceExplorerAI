@@ -2,20 +2,22 @@ import { Redirect } from "expo-router";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
-import { useAppStore } from "@/store/useAppStore";
+import { useProfileScreenState } from "@/hooks/useProfileScreenState";
 
 export default function ProfileScreen() {
-  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
-  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
-  const userEmail = useAppStore((state) => state.auth.userEmail);
-  const sessionId = useAppStore((state) => state.auth.sessionId);
-  const logout = useAppStore((state) => state.logout);
+  const {
+    shouldRedirectToLogin,
+    showLoadingState,
+    userEmail,
+    sessionId,
+    logout,
+  } = useProfileScreenState();
 
-  if (hydrationStatus !== "ready") {
+  if (showLoadingState) {
     return <AuthLoadingView />;
   }
 
-  if (!isAuthenticated) {
+  if (shouldRedirectToLogin) {
     return <Redirect href="/login" />;
   }
 
@@ -27,7 +29,7 @@ export default function ProfileScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Authenticated</Text>
-          <Text style={styles.value}>{isAuthenticated ? "Yes" : "No"}</Text>
+          <Text style={styles.value}>Yes</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Email</Text>

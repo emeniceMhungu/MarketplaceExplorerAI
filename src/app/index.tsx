@@ -12,43 +12,50 @@ import {
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
 import { ProductCard } from "@/components/ProductCard";
-import {
-  InfiniteProductItem,
-  useInfiniteProducts,
-} from "@/hooks/useInfiniteProducts";
-import { useAppStore } from "@/store/useAppStore";
+import { EmptyState } from "@/components/states/empty-state";
+import { ErrorState } from "@/components/states/error-state";
+import { OfflineState } from "@/components/states/offline-state";
+import { useHomeScreenState } from "@/hooks/useHomeScreenState";
+import { InfiniteProductItem } from "@/hooks/useInfiniteProducts";
 
 const PRODUCT_CARD_ESTIMATED_HEIGHT = 360;
 const PRODUCT_COLUMN_COUNT = 2;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
-  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
-  const addItem = useAppStore((state) => state.addItem);
+  const {
+    showAuthLoadingState,
+    shouldRedirectToLogin,
+    productsQuery,
+    addProductToCart,
+  } = useHomeScreenState();
 
   const {
     products,
-    isInitialLoading,
+    showLoadingState,
+    showErrorState,
+    showEmptyState,
+    showRefreshErrorBanner,
+    refreshErrorMessage,
     isRefreshing,
     isLoadingMore,
     hasNextPage,
-    isEmpty,
+    errorKind,
     errorMessage,
     loadMore,
     refresh,
     retry,
-  } = useInfiniteProducts(isAuthenticated && hydrationStatus === "ready");
+  } = productsQuery;
 
-  if (hydrationStatus !== "ready") {
+  if (showAuthLoadingState) {
     return <AuthLoadingView />;
   }
 
-  if (!isAuthenticated) {
+  if (shouldRedirectToLogin) {
     return <Redirect href="/login" />;
   }
 
-  if (isInitialLoading) {
+  if (showLoadingState) {
     return (
       <SafeAreaView style={styles.centeredStateContainer}>
         <ActivityIndicator size="large" color="#1d4ed8" />
@@ -60,26 +67,40 @@ export default function HomeScreen() {
     );
   }
 
-  if (errorMessage) {
+  if (showErrorState) {
+    if (errorKind === "offline") {
+      return (
+        <OfflineState
+          title="You are offline"
+          message={
+            errorMessage ??
+            "Reconnect to internet and retry loading your marketplace feed."
+          }
+          onRetry={() => {
+            void retry();
+          }}
+        />
+      );
+    }
+
     return (
-      <SafeAreaView style={styles.centeredStateContainer}>
-        <Text style={styles.centeredStateTitle}>Unable to load products</Text>
-        <Text style={styles.centeredStateSubtitle}>{errorMessage}</Text>
-        <Pressable style={styles.retryButton} onPress={() => void retry()}>
-          <Text style={styles.retryButtonText}>Try again</Text>
-        </Pressable>
-      </SafeAreaView>
+      <ErrorState
+        title="Unable to load products"
+        message={errorMessage ?? "Unexpected network error"}
+        retryLabel="Try again"
+        onRetry={() => {
+          void retry();
+        }}
+      />
     );
   }
 
-  if (isEmpty) {
+  if (showEmptyState) {
     return (
-      <SafeAreaView style={styles.centeredStateContainer}>
-        <Text style={styles.centeredStateTitle}>No products available</Text>
-        <Text style={styles.centeredStateSubtitle}>
-          Pull to refresh and try loading the feed again.
-        </Text>
-      </SafeAreaView>
+      <EmptyState
+        title="No products available"
+        message="Pull to refresh and try loading the feed again."
+      />
     );
   }
 
@@ -104,16 +125,7 @@ export default function HomeScreen() {
           });
         }}
         onAddToCart={() => {
-          addItem({
-            productId: item.id,
-            title: item.title,
-            brand: item.brand,
-            category: item.category,
-            imageUrl: item.imageUrl,
-            price: item.price,
-            rating: item.rating,
-            stock: item.stock,
-          });
+          addProductToCart(item);
         }}
       />
     </View>
@@ -127,6 +139,25 @@ export default function HomeScreen() {
           Discover products from a large catalog
         </Text>
       </View>
+
+      {showRefreshErrorBanner ? (
+        <View
+          style={[
+            styles.feedStatusBanner,
+            errorKind === "offline"
+              ? styles.feedStatusBannerOffline
+              : styles.feedStatusBannerError,
+          ]}
+        >
+          <Text style={styles.feedStatusBannerText}>
+            {refreshErrorMessage ??
+              "Unable to refresh feed. Showing cached products."}
+          </Text>
+          <Pressable onPress={() => void retry()}>
+            <Text style={styles.feedStatusBannerAction}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <FlashList
         data={products}
@@ -184,6 +215,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
   },
+  feedStatusBanner: {
+    marginHorizontal: 12,
+    marginBottom: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  feedStatusBannerOffline: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#fecaca",
+  },
+  feedStatusBannerError: {
+    backgroundColor: "#fef3c7",
+    borderColor: "#fde68a",
+  },
+  feedStatusBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#7c2d12",
+    fontWeight: "600",
+  },
+  feedStatusBannerAction: {
+    fontSize: 12,
+    color: "#1d4ed8",
+    fontWeight: "700",
+  },
   listContentContainer: {
     paddingHorizontal: 10,
     paddingBottom: 20,
@@ -222,20 +284,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     textAlign: "center",
-  },
-  retryButton: {
-    marginTop: 6,
-    backgroundColor: "#1d4ed8",
-    borderRadius: 10,
-    minHeight: 42,
-    minWidth: 140,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  retryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "700",
   },
 });

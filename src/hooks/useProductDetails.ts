@@ -49,8 +49,12 @@ export type ProductDetails = {
 
 export type UseProductDetailsResult = {
   product: ProductDetails | null;
+  showLoadingState: boolean;
+  showErrorState: boolean;
+  showEmptyState: boolean;
   isLoading: boolean;
   isError: boolean;
+  isEmpty: boolean;
   errorMessage: string | null;
   retry: () => Promise<void>;
 };
@@ -122,11 +126,18 @@ export function useProductDetails(
   });
 
   const product = useMemo(() => query.data ?? null, [query.data]);
+  const isLoading = query.isPending;
+  const isError = query.isError;
+  const isEmpty = !query.isPending && !query.isError && product === null;
 
   return {
     product,
-    isLoading: query.isPending,
-    isError: query.isError,
+    showLoadingState: isLoading,
+    showErrorState: isError && !product,
+    showEmptyState: isEmpty && !isError,
+    isLoading,
+    isError,
+    isEmpty,
     errorMessage: query.error instanceof Error ? query.error.message : null,
     retry: async () => {
       await query.refetch();

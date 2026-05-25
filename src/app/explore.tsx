@@ -14,67 +14,38 @@ import {
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
 import { ProductCard } from "@/components/ProductCard";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import {
-  ExploreProductItem,
-  useExploreProducts,
-} from "@/hooks/useExploreProducts";
-import { useProductCategories } from "@/hooks/useProductCategories";
-import { SortOption, useAppStore } from "@/store/useAppStore";
+import { EmptyState } from "@/components/states/empty-state";
+import { ErrorState } from "@/components/states/error-state";
+import { OfflineState } from "@/components/states/offline-state";
+import { ExploreProductItem } from "@/hooks/useExploreProducts";
+import { useExploreScreenState } from "@/hooks/useExploreScreenState";
 
 const PRODUCT_COLUMN_COUNT = 2;
 const PRODUCT_CARD_ESTIMATED_HEIGHT = 360;
-const SEARCH_DEBOUNCE_MS = 350;
-
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "none", label: "Default" },
-  { value: "priceAsc", label: "Price ↑" },
-  { value: "priceDesc", label: "Price ↓" },
-  { value: "highestRated", label: "Top Rated" },
-];
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
-  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
-  const addItem = useAppStore((state) => state.addItem);
+  const {
+    showAuthLoadingState,
+    shouldRedirectToLogin,
+    searchInputValue,
+    onSearchInputChange,
+    hasActiveFilters,
+    onClearFilters,
+    categoryOptions,
+    sortOptions,
+    addProductToCart,
+    categoriesQuery,
+    productsQuery,
+  } = useExploreScreenState();
 
-  const searchQuery = useAppStore((state) => state.filter.searchQuery);
-  const activeCategory = useAppStore((state) => state.filter.category);
-  const activeSort = useAppStore((state) => state.filter.sort);
-  const setSearchQuery = useAppStore((state) => state.setSearchQuery);
-  const setCategory = useAppStore((state) => state.setCategory);
-  const setSort = useAppStore((state) => state.setSort);
-  const clearFilters = useAppStore((state) => state.clearFilters);
-
-  const debouncedSearchQuery = useDebouncedValue(
-    searchQuery,
-    SEARCH_DEBOUNCE_MS,
-  );
-
-  const categoriesQuery = useProductCategories(
-    isAuthenticated && hydrationStatus === "ready",
-  );
-
-  const productsQuery = useExploreProducts({
-    enabled: isAuthenticated && hydrationStatus === "ready",
-    searchQuery: debouncedSearchQuery,
-    activeCategory,
-    sort: activeSort,
-  });
-
-  if (hydrationStatus !== "ready") {
+  if (showAuthLoadingState) {
     return <AuthLoadingView />;
   }
 
-  if (!isAuthenticated) {
+  if (shouldRedirectToLogin) {
     return <Redirect href="/login" />;
   }
-
-  const hasActiveFilters =
-    searchQuery.trim().length > 0 ||
-    activeCategory !== null ||
-    activeSort !== "none";
 
   const renderProductItem = ({ item }: { item: ExploreProductItem }) => (
     <View style={styles.productCell}>
@@ -97,16 +68,7 @@ export default function ExploreScreen() {
           });
         }}
         onAddToCart={() => {
-          addItem({
-            productId: item.id,
-            title: item.title,
-            brand: item.brand,
-            category: item.category,
-            imageUrl: item.imageUrl,
-            price: item.price,
-            rating: item.rating,
-            stock: item.stock,
-          });
+          addProductToCart(item);
         }}
       />
     </View>
@@ -123,8 +85,8 @@ export default function ExploreScreen() {
 
       <View style={styles.controlsContainer}>
         <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          value={searchInputValue}
+          onChangeText={onSearchInputChange}
           placeholder="Search products"
           autoCapitalize="none"
           autoCorrect={false}
@@ -136,30 +98,18 @@ export default function ExploreScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalRowContent}
         >
-          <Pressable
-            style={[styles.chip, activeCategory === null && styles.chipActive]}
-            onPress={() => setCategory(null)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                activeCategory === null && styles.chipTextActive,
-              ]}
-            >
-              All Categories
-            </Text>
-          </Pressable>
-
-          {categoriesQuery.categories.map((category) => {
-            const isActive = activeCategory === category.key;
+          {categoryOptions.map((category) => {
             return (
               <Pressable
                 key={category.key}
-                style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setCategory(category.key)}
+                style={[styles.chip, category.isActive && styles.chipActive]}
+                onPress={category.onSelect}
               >
                 <Text
-                  style={[styles.chipText, isActive && styles.chipTextActive]}
+                  style={[
+                    styles.chipText,
+                    category.isActive && styles.chipTextActive,
+                  ]}
                   numberOfLines={1}
                 >
                   {category.label}
@@ -174,16 +124,18 @@ export default function ExploreScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalRowContent}
         >
-          {SORT_OPTIONS.map((option) => {
-            const isActive = activeSort === option.value;
+          {sortOptions.map((option) => {
             return (
               <Pressable
-                key={option.value}
-                style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setSort(option.value)}
+                key={option.key}
+                style={[styles.chip, option.isActive && styles.chipActive]}
+                onPress={option.onSelect}
               >
                 <Text
-                  style={[styles.chipText, isActive && styles.chipTextActive]}
+                  style={[
+                    styles.chipText,
+                    option.isActive && styles.chipTextActive,
+                  ]}
                 >
                   {option.label}
                 </Text>
@@ -193,13 +145,13 @@ export default function ExploreScreen() {
         </ScrollView>
 
         {hasActiveFilters ? (
-          <Pressable style={styles.clearButton} onPress={clearFilters}>
+          <Pressable style={styles.clearButton} onPress={onClearFilters}>
             <Text style={styles.clearButtonText}>Clear filters</Text>
           </Pressable>
         ) : null}
       </View>
 
-      {categoriesQuery.isError ? (
+      {categoriesQuery.showErrorState ? (
         <View style={styles.bannerError}>
           <Text style={styles.bannerErrorText}>
             {categoriesQuery.errorMessage ?? "Unable to load categories."}
@@ -210,31 +162,56 @@ export default function ExploreScreen() {
         </View>
       ) : null}
 
-      {productsQuery.isInitialLoading ? (
+      {productsQuery.showRefreshErrorBanner ? (
+        <View
+          style={[
+            styles.bannerError,
+            productsQuery.errorKind === "offline"
+              ? styles.feedStatusBannerOffline
+              : styles.feedStatusBannerError,
+          ]}
+        >
+          <Text style={styles.bannerErrorText}>
+            {productsQuery.refreshErrorMessage ??
+              "Unable to refresh results. Showing cached products."}
+          </Text>
+          <Pressable onPress={() => void productsQuery.retry()}>
+            <Text style={styles.bannerErrorAction}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {productsQuery.showLoadingState ? (
         <View style={styles.centeredStateContainer}>
           <ActivityIndicator size="large" color="#1d4ed8" />
           <Text style={styles.centeredStateTitle}>Loading products...</Text>
         </View>
-      ) : productsQuery.errorMessage ? (
-        <View style={styles.centeredStateContainer}>
-          <Text style={styles.centeredStateTitle}>Unable to load feed</Text>
-          <Text style={styles.centeredStateSubtitle}>
-            {productsQuery.errorMessage}
-          </Text>
-          <Pressable
-            style={styles.retryButton}
-            onPress={() => void productsQuery.retry()}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </Pressable>
-        </View>
-      ) : productsQuery.isEmpty ? (
-        <View style={styles.centeredStateContainer}>
-          <Text style={styles.centeredStateTitle}>No products found</Text>
-          <Text style={styles.centeredStateSubtitle}>
-            Adjust your query, category, or sorting preferences.
-          </Text>
-        </View>
+      ) : productsQuery.showErrorState ? (
+        productsQuery.errorKind === "offline" ? (
+          <OfflineState
+            title="You are offline"
+            message={
+              productsQuery.errorMessage ??
+              "Reconnect and retry your search results."
+            }
+            onRetry={() => {
+              void productsQuery.retry();
+            }}
+          />
+        ) : (
+          <ErrorState
+            title="Unable to load feed"
+            message={productsQuery.errorMessage ?? "Unexpected network error"}
+            onRetry={() => {
+              void productsQuery.retry();
+            }}
+          />
+        )
+      ) : productsQuery.showEmptyState ? (
+        <EmptyState
+          title={productsQuery.emptyStateTitle}
+          message={productsQuery.emptyStateMessage}
+        />
       ) : (
         <FlashList
           data={productsQuery.products}
@@ -372,6 +349,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  feedStatusBannerOffline: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#fecaca",
+  },
+  feedStatusBannerError: {
+    backgroundColor: "#fef3c7",
+    borderColor: "#fde68a",
+  },
   listContentContainer: {
     paddingHorizontal: 10,
     paddingBottom: 20,
@@ -411,20 +396,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     textAlign: "center",
-  },
-  retryButton: {
-    marginTop: 4,
-    backgroundColor: "#1d4ed8",
-    borderRadius: 10,
-    minHeight: 40,
-    minWidth: 120,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  retryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "700",
   },
 });
