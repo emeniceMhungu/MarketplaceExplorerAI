@@ -1,12 +1,25 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useAppStore } from "@/store/useAppStore";
+
+const HIDDEN_TAB_BAR_STYLE = { display: "none" } as const;
 
 export default function RootLayout() {
   const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
   const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
+  const shouldHideTabBar = !isAuthenticated || hydrationStatus !== "ready";
+
+  const tabsScreenOptions = useMemo(
+    () => ({
+      headerShown: false,
+      tabBarStyle: shouldHideTabBar ? HIDDEN_TAB_BAR_STYLE : undefined,
+    }),
+    [shouldHideTabBar],
+  );
+
+  const protectedHref = isAuthenticated ? undefined : null;
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -21,15 +34,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle:
-            !isAuthenticated || hydrationStatus !== "ready"
-              ? { display: "none" }
-              : undefined,
-        }}
-      >
+      <Tabs screenOptions={tabsScreenOptions}>
         <Tabs.Screen
           name="splash"
           options={{
@@ -49,21 +54,21 @@ export default function RootLayout() {
           name="explore"
           options={{
             title: "Explore",
-            href: isAuthenticated ? undefined : null,
+            href: protectedHref,
           }}
         />
         <Tabs.Screen
           name="cart"
           options={{
             title: "Cart",
-            href: isAuthenticated ? undefined : null,
+            href: protectedHref,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
-            href: isAuthenticated ? undefined : null,
+            href: protectedHref,
           }}
         />
       </Tabs>

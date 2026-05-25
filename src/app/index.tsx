@@ -24,6 +24,7 @@ const PRODUCT_COLUMN_COUNT = 2;
 export default function HomeScreen() {
   const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
   const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
+  const addItem = useAppStore((state) => state.addItem);
 
   const {
     products,
@@ -92,6 +93,18 @@ export default function HomeScreen() {
         discountPercentage={item.discountPercentage}
         rating={item.rating}
         stock={item.stock}
+        onAddToCart={() => {
+          addItem({
+            productId: item.id,
+            title: item.title,
+            brand: item.brand,
+            category: item.category,
+            imageUrl: item.imageUrl,
+            price: item.price,
+            rating: item.rating,
+            stock: item.stock,
+          });
+        }}
       />
     </View>
   );

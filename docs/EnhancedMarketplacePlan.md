@@ -484,7 +484,7 @@ Governance checkpoints:
 
 Use this section during delivery to stamp timing and progress for each phase.
 
-Last tracker update: 17h12
+Last tracker update: 18h16
 
 ### Phase 1 Tracker: Foundation and Architecture Skeleton
 
@@ -584,26 +584,26 @@ AC checklist:
 ### Phase 5 Tracker: Business Rules Engine and Cart Calculations
 
 Planned window: 15h10-16h25
-Actual start: Not started (as of 13h48)
-Actual end: Not completed (as of 13h48)
-Completeness: 0%
-Status: Not Started
+Actual start: 17h20
+Actual end: 18h16
+Completeness: 100%
+Status: Completed
 
 Task checklist:
 
-- [ ] Implement Rule A (Premium Choice)
-- [ ] Implement Rule B (Low Stock + quantity cap)
-- [ ] Implement Rule C (Cart Eligibility + disabled reason)
-- [ ] Implement Rule D (Bulk discount > 5000)
-- [ ] Cart add/remove/quantity update and persistence
-- [ ] Rule fixtures for deterministic validation
+- [x] Implement Rule A (Premium Choice)
+- [x] Implement Rule B (Low Stock + quantity cap)
+- [x] Implement Rule C (Cart Eligibility + disabled reason)
+- [x] Implement Rule D (Bulk discount > 5000)
+- [x] Cart add/remove/quantity update and persistence
+- [x] Rule fixtures for deterministic validation
 
 AC checklist:
 
-- [ ] Rule outcomes are deterministic and consistent across screens
-- [ ] Quantity capping is enforced at all cart mutation points
-- [ ] Discount recalculates on every cart mutation
-- [ ] Cart survives app restart with accurate totals
+- [x] Rule outcomes are deterministic and consistent across implemented screens
+- [x] Quantity capping is enforced at all cart mutation points
+- [x] Discount recalculates on every cart mutation
+- [x] Cart survives app restart with accurate totals
 
 ### Phase 6 Tracker: Product Details and Related Products
 
