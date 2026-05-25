@@ -1,10 +1,21 @@
-import { ScreenStub } from "@/components/screen-stub";
+import { Redirect } from "expo-router";
+
+import { AuthGateView, AuthLoadingView } from "@/components/auth-gate-view";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function LoginScreen() {
-  return (
-    <ScreenStub
-      title="Login"
-      description="Phase 1 login route stub. Authentication logic will be implemented in the next phase."
-    />
-  );
+  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
+  const isLoading = useAppStore((state) => state.auth.isLoading);
+  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
+  const login = useAppStore((state) => state.login);
+
+  if (hydrationStatus !== "ready") {
+    return <AuthLoadingView />;
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/" />;
+  }
+
+  return <AuthGateView isLoading={isLoading} onSubmit={login} />;
 }

@@ -212,6 +212,8 @@ Acceptance criteria:
 - Invalid credentials format blocks submission and shows error
 - Relaunch after login restores authenticated entry without re-login
 - Logout clears session and returns user to login
+- Protected app tabs and protected direct routes are not accessible while signed out
+- Any unauthenticated attempt to access Home, Search, Cart, Profile, or legacy non-spec routes inside the app shell redirects to the login gate
 
 ### 10.2 Home Product Feed
 

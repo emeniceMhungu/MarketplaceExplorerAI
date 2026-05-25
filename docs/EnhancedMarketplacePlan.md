@@ -484,7 +484,7 @@ Governance checkpoints:
 
 Use this section during delivery to stamp timing and progress for each phase.
 
-Last tracker update: 13h48
+Last tracker update: 15h35
 
 ### Phase 1 Tracker: Foundation and Architecture Skeleton
 
@@ -511,24 +511,26 @@ AC checklist:
 ### Phase 2 Tracker: Auth Bootstrap and Session Persistence
 
 Planned window: 12h10-13h00
-Actual start: Not started (as of 13h48)
-Actual end: Not completed (as of 13h48)
-Completeness: 0%
-Status: Not Started
+Actual start: 14h15
+Actual end: 14h52
+Completeness: 100%
+Status: Completed
 
 Task checklist:
 
-- [ ] Splash bootstrap logic
-- [ ] Login screen validation and fake async auth
-- [ ] Session persistence and logout flow
-- [ ] Fake auth success/failure and delay toggles for verification
+- [x] Splash bootstrap logic
+- [x] Login screen validation and fake async auth
+- [x] Session persistence and logout flow
+- [x] Fake auth success/failure and delay toggles for verification
 
 AC checklist:
 
-- [ ] Invalid email/password format prevents submission
-- [ ] Successful login writes session and routes to tabs
-- [ ] App restart restores authenticated state
-- [ ] Logout clears session and returns to login
+- [x] Invalid email/password format prevents submission
+- [x] Successful login writes session and routes to tabs
+- [x] App restart restores authenticated state
+- [x] Logout clears session and returns to login
+- [x] Protected tabs and protected direct routes are inaccessible while signed out
+- [x] Unauthenticated access attempts are redirected to the login gate
 
 ### Phase 3 Tracker: Catalog Feed and Pagination Core
 
