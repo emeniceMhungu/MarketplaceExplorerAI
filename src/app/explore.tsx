@@ -5,13 +5,13 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AuthLoadingView } from "@/components/auth-gate-view";
 import { ProductCard } from "@/components/ProductCard";

@@ -1,10 +1,15 @@
-import { ScreenStub } from "@/components/screen-stub";
+import { Redirect } from "expo-router";
+
+import { AuthLoadingView } from "@/components/auth-gate-view";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function SplashScreen() {
-  return (
-    <ScreenStub
-      title="Splash"
-      description="Phase 1 splash route stub. This screen validates flat-route navigation wiring in src/app."
-    />
-  );
+  const isAuthenticated = useAppStore((state) => state.auth.isAuthenticated);
+  const hydrationStatus = useAppStore((state) => state.auth.hydrationStatus);
+
+  if (hydrationStatus !== "ready") {
+    return <AuthLoadingView />;
+  }
+
+  return <Redirect href={isAuthenticated ? "/" : "/login"} />;
 }

@@ -102,56 +102,93 @@ npx tsc --noEmit
 
 ---
 
-## 🎥 6. Production Demoware & Release Artifacts
+## 📦 6. Release Artifact Download (APK)
 
-Per the assignment's technical guidelines, visual delivery evidence is packaged right inside the main delivery archive for immediate panel evaluation:
+### 6.1 Demo Recording
 
-## 📁 6.1 Interactive Video Walkthrough
+- Demo 1: [Google Drive demo_walkthrough_1.webm](https://drive.google.com/file/d/1MopMzKkuqNGuu3sd1ukzV_qPRTL-70eK/view?usp=drive_link)
+- Demo 2: [Google Drive demo_walkthrough_2.webm](https://drive.google.com/file/d/19mWDTn2LeG53CaCc8Y5eSatnfNcz4FsA/view?usp=drive_link)
+- Demo 3: [Google Drive demo_walkthrough_3.webm](https://drive.google.com/file/d/1AwNQq_F9_Ga6psp1120OVXIa2RIZT50P/view?usp=drive_link)
+- Suggested coverage: authentication flow, home feed pagination, explore filters/search, cart discount rules, offline banner behavior, and navigation across tabs.
 
-- Location: docs/demo-walkthrough.mp4 (or packaged alongside your final submission link)
-- Coverage: Demonstrates mock authentication entry gating, endless pagination loading, search debouncing throttle, active Category selections, side-by-side tab navigation context preservation, Rule A gold visual badging, Rule C eligibility alerts, and Rule D corporate bulk split-discount calculations live on device.
+### 6.2 Android APK Artifact
 
-## 📦 6.2 Pre-compiled Build Binary (APK / Expo Dev Client)
+To validate the Android build without running a local native compile, download the generated APK artifact directly from GitHub Actions:
 
-- Location / Run: Because this project compiles using specialized local C++ TurboModule libraries (react-native-mmkv native dependencies, localized autolinking configurations), running a raw native build requires local device compilation tools.
-- To test the compiled release binary natively right now without running a local terminal server:
+- APK artifact download: https://github.com/emeniceMhungu/MarketplaceExplorerAI/actions/runs/26424639315/artifacts/7206601484
 
-1. Ensure an Android emulator or iOS device is connected.
-2. Execute the local deployment scripts:
+Notes:
+
+- The artifact is produced by the `android-apk-delivery` job in the workflow at `.github/workflows/ci.yml`.
+- The upload step publishes `android/app/build/outputs/apk/debug/*.apk` as artifact name `marketplaceexplorerai-android-apk`.
+- This artifact is generated after Expo Android prebuild and Gradle debug assembly complete successfully.
+
+### 6.3 Why There Is No iOS APK-Equivalent Download Link
+
+- iOS does not have a universal installable binary equivalent to Android APK that can be publicly downloaded and installed on arbitrary devices.
+- iOS app binaries (`.ipa`) require Apple code signing, provisioning profiles, and device eligibility through App Store Connect distribution channels (for example, TestFlight or App Store release).
+- Because of that platform policy, this repository provides a direct Android artifact link, while iOS should be built/run from source.
+
+Build from this repository:
 
 ```bash
-   npx expo run:ios # Compiles raw native Objective-C container on Mac
-   npx expo run:android # Compiles raw native Gradle Java binary container
+npx expo install
+npx expo run:ios
 ```
 
-3.  Alternatively, the pre-compiled MarketplaceExplorerAI.apk is packaged in the root project folder for instant drag-and-drop installation straight onto any Android Emulator screen.
+Optional Android local build from source:
+
+```bash
+npx expo run:android
+```
 
 ---
 
-## 📋 7. Continuous Integration Protection (CI/CD)
+## 📋 7. Continuous Integration (CI) Workflow
 
-To safeguard branch and layout code stability under production-scale multi-developer pipelines, an automated continuous integration pipeline configuration is pre-wired at .github/workflows/ci.yml. It forces every isolated push or incoming Pull Request to successfully pass full dependency alignments, strict typechecks (npx tsc), and lint sweeps on a headless Ubuntu cloud machine before allowing merger clearance [Technical Assignment Spec].
+The repository uses a single executable workflow at `.github/workflows/ci.yml`.
+
+### 7.1 Trigger Strategy
+
+- Runs on `push` to `main` and `master`.
+- Runs on `pull_request` targeting `main` and `master` for `opened`, `synchronize`, and `reopened` events.
+
+### 7.2 Job Overview
+
+- `verify-build-integrity`
+  - `npm ci`
+  - `npx tsc --noEmit`
+  - `npm run lint --if-present`
+  - `npm test`
+- `dependency-audit-gate`
+  - `npm ci`
+  - `npm audit --audit-level=high`
+- `dependency-review-gate` (PR only)
+  - Runs `actions/dependency-review-action@v4`
+  - Emits a warning message if dependency graph is disabled
+- `android-apk-delivery`
+  - Runs only for main/master push or PR-to-main/master contexts
+  - Validates upstream prechecks before build
+  - Executes `npx expo prebuild --platform android --non-interactive`
+  - Builds with Gradle `assembleDebug`
+  - Uploads logs on failure (`android-gradle-logs`)
+  - Uploads APK artifact (`marketplaceexplorerai-android-apk`)
+
+### 7.3 CI Output Artifacts
+
+- Android debug APK artifact name: `marketplaceexplorerai-android-apk`
+- APK path captured by workflow: `android/app/build/outputs/apk/debug/*.apk`
+- Failure diagnostics artifact name: `android-gradle-logs`
 
 ---
 
-## ✅ 8. Correctness & Coverage Addendum (Non-destructive)
+## ✅ 8. Correctness & Coverage Addendum
 
-Additional verification coverage currently active in the CI workflow:
+Operational parity checks aligned with CI:
 
-- Dependency Vulnerability Audit Gate: npm audit --audit-level=high
-- Pull Request Dependency Review Gate: actions/dependency-review-action@v4
-- Workflow execution path: .github/workflows/ci.yml (repository root executable location)
-
-Path consistency checks:
-
-- Enhanced Marketplace planning/specification files are available under docs/:
-  - docs/EnhancedMarketplacePlan.md
-  - docs/EnhancedMarketplaceSpec.md
-
-Operational verification notes:
-
-- Local TypeScript gate is valid and aligned with CI: npx tsc --noEmit
-- Lint gate is valid and aligned with CI: npm run lint
+- TypeScript gate: `npx tsc --noEmit`
+- Lint gate: `npm run lint`
+- Unit tests: `npm test`
 
 ---
 

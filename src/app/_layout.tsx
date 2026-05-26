@@ -37,7 +37,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.rootShell}>
-        <Tabs screenOptions={tabsScreenOptions}>
+        <Tabs initialRouteName="index" screenOptions={tabsScreenOptions}>
           <Tabs.Screen
             name="splash"
             options={{
